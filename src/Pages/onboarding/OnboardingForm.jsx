@@ -523,9 +523,9 @@ const OnboardingForm = () => {
       )}
 
       <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <Grid container spacing={4}>
+        <Grid container spacing={4} >
           {/* Personal Information */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} sx={{ width: { xs: "100%", md: "48%" } }}>
             <Card elevation={2} sx={{ height: "fit-content" }}>
               <CardContent sx={{ p: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={2} mb={3}>
@@ -593,7 +593,7 @@ const OnboardingForm = () => {
           </Grid>
 
           {/* Professional Information */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} sx={{ width: { xs: "100%", md: "48%" } }}>
             <Card elevation={2} sx={{ height: "fit-content" }}>
               <CardContent sx={{ p: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={2} mb={3}>
