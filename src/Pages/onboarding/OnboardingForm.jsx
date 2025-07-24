@@ -170,7 +170,7 @@
 // export default OnboardingForm;
 
 // Converted to JSX with Material UI styling
-import React, { useState } from "react";
+import React from "react";
 import {
   Container,
   Typography,
@@ -206,175 +206,118 @@ import {
   Home,
   GraduationCap,
 } from "lucide-react";
+
 import axios from "axios";
 import { BusinessCenter, PersonOutline } from "@mui/icons-material";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+
+// Yup validation schema
+const validationSchema = Yup.object().shape({
+  full_name: Yup.string().matches(/^[A-Za-z\s]+$/, "Full Name must contain only letters and spaces")
+    .required("Full Name is required"),
+  dob: Yup.string().required("Date of Birth is required"),
+  phone: Yup.string()
+    .matches(/^\d{10}$/, "Phone number must be exactly 10 digits")
+    .required("Phone number is required"),
+  email: Yup.string().email("Invalid email").required("Email is required"),
+  gender: Yup.string().required("Gender is required"),
+  adhar_number: Yup.string()
+    .matches(/^\d{12}$/, "Aadhaar number must be exactly 12 digits")
+    .required("Aadhaar number is required"),
+  address: Yup.string().required("Address is required"),
+  qualification: Yup.string().required("Qualification is required"),
+  department: Yup.string().required("Department is required"),
+  designation: Yup.string().required("Designation is required"),
+});
+
+const defaultValues = {
+  full_name: "",
+  dob: "",
+  phone: "",
+  email: "",
+  gender: "",
+  adhar_number: "",
+  address: "",
+  qualification: "",
+  experience: "",
+  department: "",
+  designation: "",
+  avatar: [],
+  aadhaar: [],
+  pan_card: [],
+  voter_id: [],
+  tenth: [],
+  twelth: [],
+  diploma: [],
+  degree: [],
+  experience_letters: [],
+  passport: [],
+  driving_license: [],
+};
 
 const OnboardingForm = () => {
-  const initialFormData = {
-    full_name: "",
-    dob: "",
-    phone: "",
-    email: "",
-    gender: "",
-    adhar_number: "",
-    address: "",
-    qualification: "",
-    experience: "",
-    department: "",
-    designation: "",
-    avatar: null,
-    aadhaar: null,
-    pan_card: null,
-    voter_id: null,
-    tenth: null,
-    twelth: null,
-    diploma: null,
-    degree: null,
-    experience_letters: null,
-    passport: null,
-    driving_license: null,
-  };
+  const [loading, setLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
+  const [error, setError] = React.useState("");
 
-  const [formData, setFormData] = useState(initialFormData);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues,
+    resolver: yupResolver(validationSchema),
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    if (files && files.length > 0) {
-      setFormData((prev) => ({ ...prev, [name]: Array.from(files) }));
-    }
-  };
-
-  const validateForm = () => {
-    const requiredFields = [
-      "full_name",
-      "dob",
-      "phone",
-      "email",
-      "gender",
-      "adhar_number",
-      "address",
-      "qualification",
-      "department",
-      "designation",
-    ];
-    for (const field of requiredFields) {
-      if (!formData[field]) {
-        setError(`${field.replace("_", " ").toUpperCase()} is required`);
-        return false;
-      }
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
-      return false;
-    }
-    const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(formData.phone)) {
-      setError("Please enter a valid 10-digit phone number");
-      return false;
-    }
-    const aadhaarRegex = /^\d{12}$/;
-    if (!aadhaarRegex.test(formData.adhar_number)) {
-      setError("Please enter a valid 12-digit Aadhaar number");
-      return false;
-    }
-    return true;
-  };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setError("");
-  //   setSuccess(false);
-  //   if (!validateForm()) return;
-  //   setLoading(true);
-
-  //   try {
-  //     const submitData = new FormData();
-  //     Object.keys(formData).forEach((key) => {
-  //       const value = formData[key];
-  //       if (fileFields.includes(key)) {
-  //         if (Array.isArray(value) && value.length > 0) {
-  //           value.forEach((file) => {
-  //             if (file) submitData.append(key, file);
-  //           });
-  //         } else {
-  //           submitData.append(key, "");
-  //         }
-  //       } else if (value) {
-  //         submitData.append(key, value);
-  //       }
-  //     });
-
-  //     // Simulate API call
-  //     await new Promise((resolve) => setTimeout(resolve, 2000));
-  //     setSuccess(true);
-  //     setFormData(initialFormData);
-  //   } catch (err) {
-  //     setError(
-  //       "Failed to submit form. Please try again." +
-  //         (err?.message ? ` (${err.message})` : "")
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setSuccess(false);
-  if (!validateForm()) return;
-  setLoading(true);
-  try {
-    const submitData = new FormData();
-    Object.keys(formData).forEach((key) => {
-      const value = formData[key];
-      // For file fields, always append as array (even if empty)
-      if (fileFields.includes(key)) {
-        if (Array.isArray(value) && value.length > 0) {
-          value.forEach((file) => {
-            if (file) submitData.append(key, file);
-          });
-        } else {
-          // Send empty value for empty file field
-          submitData.append(key, "");
+  const onSubmit = async (data) => {
+    setError("");
+    setSuccess(false);
+    setLoading(true);
+    try {
+      const submitData = new FormData();
+      Object.keys(data).forEach((key) => {
+        const value = data[key];
+        if (fileFields.includes(key)) {
+          if (Array.isArray(value) && value.length > 0) {
+            value.forEach((file) => {
+              if (file) submitData.append(key, file);
+            });
+          } else {
+            submitData.append(key, "");
+          }
+        } else if (value) {
+          submitData.append(key, value);
         }
-      } else if (value) {
-        submitData.append(key, value);
-      }
-    });
+      });
 
-    const response = await axios.post(
-      "https://rabs.alvision.in/submit_onboarding_form",
-      submitData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-    if (response.status === 200) {
-      setSuccess(true);
-      setFormData(initialFormData);
-    } else throw new Error("Submission failed");
-  } catch (err) {
-    setError(
-      "Failed to submit form. Please try again." +
-        (err?.message ? ` (${err.message})` : "")
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      const response = await axios.post(
+        "https://rabs.alvision.in/submit_onboarding_form",
+        submitData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (response.status === 200) {
+        setSuccess(true);
+        reset(defaultValues);
+      } else throw new Error("Submission failed");
+    } catch (err) {
+      setError(
+        "Failed to submit form. Please try again." +
+          (err?.message ? ` (${err.message})` : "")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
   const personalFields = [
     {
       name: "full_name",
@@ -522,8 +465,8 @@ const OnboardingForm = () => {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <Grid container spacing={4} >
+      <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
+        <Grid container spacing={4}>
           {/* Personal Information */}
           <Grid item xs={12} md={6} sx={{ width: { xs: "100%", md: "48%" } }}>
             <Card elevation={2} sx={{ height: "fit-content" }}>
@@ -538,54 +481,76 @@ const OnboardingForm = () => {
 
                 <Stack spacing={3}>
                   {personalFields.map((field) => (
-                    <TextField
+                    <Controller
                       key={field.name}
-                      fullWidth
-                      type={field.type}
-                      label={field.label}
                       name={field.name}
-                      value={formData[field.name]}
-                      onChange={handleInputChange}
-                      required={field.required}
-                      InputLabelProps={
-                        field.type === "date" ? { shrink: true } : {}
-                      }
-                      variant="outlined"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "primary.main",
-                          },
-                        },
-                      }}
+                      control={control}
+                      render={({ field: controllerField }) => (
+                        <TextField
+                          {...controllerField}
+                          fullWidth
+                          type={field.type}
+                          label={field.label}
+                          required={field.required}
+                          InputLabelProps={
+                            field.type === "date" ? { shrink: true } : {}
+                          }
+                          variant="outlined"
+                          error={!!errors[field.name]}
+                          helperText={errors[field.name]?.message}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              "&:hover fieldset": {
+                                borderColor: "primary.main",
+                              },
+                            },
+                          }}
+                        />
+                      )}
                     />
                   ))}
 
-                  <FormControl fullWidth required>
-                    <InputLabel>Gender</InputLabel>
-                    <Select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleInputChange}
-                      label="Gender"
-                    >
-                      <MenuItem value="">Select Gender</MenuItem>
-                      <MenuItem value="male">Male</MenuItem>
-                      <MenuItem value="female">Female</MenuItem>
-                      <MenuItem value="other">Other</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <Controller
+                    name="gender"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth required error={!!errors.gender}>
+                        <InputLabel>Gender</InputLabel>
+                        <Select
+                          {...field}
+                          label="Gender"
+                          value={field.value || ""}
+                        >
+                          <MenuItem value="">Select Gender</MenuItem>
+                          <MenuItem value="male">Male</MenuItem>
+                          <MenuItem value="female">Female</MenuItem>
+                          <MenuItem value="other">Other</MenuItem>
+                        </Select>
+                        {errors.gender && (
+                          <Typography color="error" variant="caption">
+                            {errors.gender.message}
+                          </Typography>
+                        )}
+                      </FormControl>
+                    )}
+                  />
 
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={4}
-                    label="Address"
+                  <Controller
                     name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your complete address..."
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        multiline
+                        minRows={4}
+                        label="Address"
+                        required
+                        placeholder="Enter your complete address..."
+                        error={!!errors.address}
+                        helperText={errors.address?.message}
+                      />
+                    )}
                   />
                 </Stack>
               </CardContent>
@@ -606,23 +571,29 @@ const OnboardingForm = () => {
 
                 <Stack spacing={3}>
                   {professionalFields.map((field) => (
-                    <TextField
+                    <Controller
                       key={field.name}
-                      fullWidth
-                      type={field.type}
-                      label={field.label}
                       name={field.name}
-                      value={formData[field.name]}
-                      onChange={handleInputChange}
-                      required={field.required}
-                      variant="outlined"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&:hover fieldset": {
-                            borderColor: "primary.main",
-                          },
-                        },
-                      }}
+                      control={control}
+                      render={({ field: controllerField }) => (
+                        <TextField
+                          {...controllerField}
+                          fullWidth
+                          type={field.type}
+                          label={field.label}
+                          required={field.required}
+                          variant="outlined"
+                          error={!!errors[field.name]}
+                          helperText={errors[field.name]?.message}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              "&:hover fieldset": {
+                                borderColor: "primary.main",
+                              },
+                            },
+                          }}
+                        />
+                      )}
                     />
                   ))}
                 </Stack>
@@ -664,57 +635,69 @@ const OnboardingForm = () => {
                       <Grid container spacing={2}>
                         {category.fields.map((fieldName) => (
                           <Grid item xs={12} sm={6} md={4} key={fieldName}>
-                            <Button
-                              variant="outlined"
-                              component="label"
-                              fullWidth
-                              startIcon={<Upload />}
-                              sx={{
-                                height: 56,
-                                borderStyle: "dashed",
-                                borderWidth: 2,
-                                "&:hover": {
-                                  borderStyle: "dashed",
-                                  borderWidth: 2,
-                                  backgroundColor: "rgba(25, 118, 210, 0.04)",
-                                },
-                              }}
-                            >
-                              <Box sx={{ textAlign: "center" }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 500 }}
+                            <Controller
+                              name={fieldName}
+                              control={control}
+                              render={({ field }) => (
+                                <Button
+                                  variant="outlined"
+                                  component="label"
+                                  fullWidth
+                                  startIcon={<Upload />}
+                                  sx={{
+                                    height: 56,
+                                    borderStyle: "dashed",
+                                    borderWidth: 2,
+                                    "&:hover": {
+                                      borderStyle: "dashed",
+                                      borderWidth: 2,
+                                      backgroundColor:
+                                        "rgba(25, 118, 210, 0.04)",
+                                    },
+                                  }}
                                 >
-                                  {Array.isArray(formData[fieldName]) &&
-                                  formData[fieldName].length > 0
-                                    ? `${formData[fieldName].length} file(s) selected`
-                                    : fieldName
-                                        .replace(/_/g, " ")
-                                        .replace(/\b\w/g, (l) =>
-                                          l.toUpperCase()
-                                        )}
-                                </Typography>
-                                {Array.isArray(formData[fieldName]) &&
-                                  formData[fieldName].length > 0 && (
+                                  <Box sx={{ textAlign: "center" }}>
                                     <Typography
-                                      variant="caption"
-                                      color="text.secondary"
+                                      variant="body2"
+                                      sx={{ fontWeight: 500 }}
                                     >
-                                      {formData[fieldName]
-                                        .map((f) => f.name)
-                                        .join(", ")}
+                                      {Array.isArray(field.value) &&
+                                      field.value.length > 0
+                                        ? `${field.value.length} file(s) selected`
+                                        : fieldName
+                                            .replace(/_/g, " ")
+                                            .replace(/\b\w/g, (l) =>
+                                              l.toUpperCase()
+                                            )}
                                     </Typography>
-                                  )}
-                              </Box>
-                              <input
-                                type="file"
-                                name={fieldName}
-                                multiple
-                                hidden
-                                onChange={handleFileChange}
-                                accept=".pdf,.jpg,.jpeg,.png"
-                              />
-                            </Button>
+                                    {Array.isArray(field.value) &&
+                                      field.value.length > 0 && (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
+                                          {field.value
+                                            .map((f) => f.name)
+                                            .join(", ")}
+                                        </Typography>
+                                      )}
+                                  </Box>
+                                  <input
+                                    type="file"
+                                    name={fieldName}
+                                    multiple
+                                    hidden
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => {
+                                      const files = Array.from(
+                                        e.target.files || []
+                                      );
+                                      field.onChange(files);
+                                    }}
+                                  />
+                                </Button>
+                              )}
+                            />
                           </Grid>
                         ))}
                       </Grid>
