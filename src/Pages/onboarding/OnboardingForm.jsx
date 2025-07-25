@@ -215,7 +215,8 @@ import * as Yup from "yup";
 
 // Yup validation schema
 const validationSchema = Yup.object().shape({
-  full_name: Yup.string().matches(/^[A-Za-z\s]+$/, "Full Name must contain only letters and spaces")
+  full_name: Yup.string()
+    .matches(/^[A-Za-z\s]+$/, "Full Name must contain only letters and spaces")
     .required("Full Name is required"),
   dob: Yup.string().required("Date of Birth is required"),
   phone: Yup.string()
@@ -253,8 +254,8 @@ const defaultValues = {
   diploma: [],
   degree: [],
   experience_letters: [],
-  passport: [],
-  driving_license: [],
+  // passport: [],
+  // driving_license: [],
 };
 
 const OnboardingForm = () => {
@@ -278,6 +279,43 @@ const OnboardingForm = () => {
   const onSubmit = async (data) => {
     setError("");
     setSuccess(false);
+
+    // Check all required fields
+    let missingField = null;
+    // Check text fields
+    [
+      ...personalFields.filter((f) => f.required).map((f) => f.name),
+      ...professionalFields.filter((f) => f.required).map((f) => f.name),
+      "gender",
+      "address",
+    ].forEach((field) => {
+      if (
+        !data[field] ||
+        (typeof data[field] === "string" && data[field].trim() === "")
+      ) {
+        missingField = field;
+      }
+    });
+    // Check file fields
+    fileFields.forEach((field) => {
+      if (
+        !data[field] ||
+        !Array.isArray(data[field]) ||
+        data[field].length === 0
+      ) {
+        missingField = field;
+      }
+    });
+    if (missingField) {
+      setError(
+        `Please fill out the '${missingField.replace(
+          /_/g,
+          " "
+        )}' field before submitting.`
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const submitData = new FormData();
@@ -391,8 +429,8 @@ const OnboardingForm = () => {
     "diploma",
     "degree",
     "experience_letters",
-    "passport",
-    "driving_license",
+    // "passport",
+    // "driving_license",
   ];
 
   const documentCategories = {
@@ -403,8 +441,8 @@ const OnboardingForm = () => {
         "aadhaar",
         "pan_card",
         "voter_id",
-        "passport",
-        "driving_license",
+        // "passport",
+        // "driving_license",
       ],
       color: "#1976d2",
     },
@@ -445,30 +483,10 @@ const OnboardingForm = () => {
         </Stack>
       </Paper>
 
-      {/* Status Messages */}
-      {success && (
-        <Alert
-          severity="success"
-          icon={<CheckCircle />}
-          sx={{ mb: 3, fontSize: "1rem" }}
-        >
-          Form submitted successfully! Welcome to the team.
-        </Alert>
-      )}
-      {error && (
-        <Alert
-          severity="error"
-          icon={<AlertCircle />}
-          sx={{ mb: 3, fontSize: "1rem" }}
-        >
-          {error}
-        </Alert>
-      )}
-
       <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
-        <Grid container spacing={4}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mb: 4 }}>
           {/* Personal Information */}
-          <Grid item xs={12} md={6} sx={{ width: { xs: "100%", md: "48%" } }}>
+          <Box sx={{ width: "100%" }}>
             <Card elevation={2} sx={{ height: "fit-content" }}>
               <CardContent sx={{ p: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={2} mb={3}>
@@ -478,7 +496,6 @@ const OnboardingForm = () => {
                   </Typography>
                 </Stack>
                 <Divider sx={{ mb: 3 }} />
-
                 <Stack spacing={3}>
                   {personalFields.map((field) => (
                     <Controller
@@ -509,7 +526,6 @@ const OnboardingForm = () => {
                       )}
                     />
                   ))}
-
                   <Controller
                     name="gender"
                     control={control}
@@ -534,7 +550,6 @@ const OnboardingForm = () => {
                       </FormControl>
                     )}
                   />
-
                   <Controller
                     name="address"
                     control={control}
@@ -555,10 +570,10 @@ const OnboardingForm = () => {
                 </Stack>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Professional Information */}
-          <Grid item xs={12} md={6} sx={{ width: { xs: "100%", md: "48%" } }}>
+          <Box sx={{ width: "100%" }}>
             <Card elevation={2} sx={{ height: "fit-content" }}>
               <CardContent sx={{ p: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={2} mb={3}>
@@ -568,7 +583,6 @@ const OnboardingForm = () => {
                   </Typography>
                 </Stack>
                 <Divider sx={{ mb: 3 }} />
-
                 <Stack spacing={3}>
                   {professionalFields.map((field) => (
                     <Controller
@@ -599,10 +613,10 @@ const OnboardingForm = () => {
                 </Stack>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Document Uploads */}
-          <Grid item xs={12}>
+          <Box sx={{ width: "100%" }}>
             <Card elevation={2}>
               <CardContent sx={{ p: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={2} mb={3}>
@@ -612,7 +626,6 @@ const OnboardingForm = () => {
                   </Typography>
                 </Stack>
                 <Divider sx={{ mb: 4 }} />
-
                 <Stack spacing={4}>
                   {Object.entries(documentCategories).map(([key, category]) => (
                     <Box key={key}>
@@ -631,10 +644,9 @@ const OnboardingForm = () => {
                           }}
                         />
                       </Stack>
-
                       <Grid container spacing={2}>
                         {category.fields.map((fieldName) => (
-                          <Grid item xs={12} sm={6} md={4} key={fieldName}>
+                          <Grid item xs={12} sm={6} md={12} key={fieldName}>
                             <Controller
                               name={fieldName}
                               control={control}
@@ -706,43 +718,61 @@ const OnboardingForm = () => {
                 </Stack>
               </CardContent>
             </Card>
-          </Grid>
-
-          {/* Submit Button */}
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="center" mt={2}>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={loading}
-                size="large"
-                startIcon={
-                  loading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <FileText />
-                  )
-                }
-                sx={{
-                  px: 6,
-                  py: 2,
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  borderRadius: 3,
-                  background:
-                    "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
-                  boxShadow: "0 3px 5px 2px rgba(33, 203, 243, .3)",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(45deg, #1976D2 30%, #1CB5E0 90%)",
-                  },
-                }}
+          </Box>
+        </Box>
+        {/* Status Messages at bottom */}
+        <Box display="flex" justifyContent="center" mt={2} mb={2}>
+          <Box sx={{ width: "100%", maxWidth: 600 }}>
+            {success && (
+              <Alert
+                severity="success"
+                icon={<CheckCircle />}
+                sx={{ mb: 2, fontSize: "1rem" }}
               >
-                {loading ? "Submitting..." : "Submit Application"}
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+                Form submitted successfully! Welcome to the team.
+              </Alert>
+            )}
+            {error && (
+              <Alert
+                severity="error"
+                icon={<AlertCircle />}
+                sx={{ mb: 2, fontSize: "1rem" }}
+              >
+                {error}
+              </Alert>
+            )}
+          </Box>
+        </Box>
+        {/* Submit Button */}
+        <Box display="flex" justifyContent="center" mt={0}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            size="large"
+            startIcon={
+              loading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <FileText />
+              )
+            }
+            sx={{
+              px: 6,
+              py: 2,
+              fontSize: "1.1rem",
+              fontWeight: 600,
+              borderRadius: 3,
+              background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+              boxShadow: "0 3px 5px 2px rgba(33, 203, 243, .3)",
+              "&:hover": {
+                background: "linear-gradient(45deg, #1976D2 30%, #1CB5E0 90%)",
+              },
+            }}
+          >
+            {loading ? "Submitting..." : "Submit Application"}
+          </Button>
+        </Box>
       </form>
     </Container>
   );
